@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/decode"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
 )
 
 func main() {
@@ -16,13 +17,10 @@ func main() {
 		log.Fatal(decode.ErrWrongArgumentsCount)
 	}
 
-	alg := decode.Alg(args[0])
-	decoder, err := decode.Factory(alg)
+	alg := encode.Alg(args[0])
+	decoder := decode.NewDecoder(alg)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	// add for timing https://tour.golang.org/concurrency/6
 	start := time.Now()
 	pass, err := decoder.Decode(args[1])
 	elapsed := time.Since(start)

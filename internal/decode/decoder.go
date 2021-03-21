@@ -1,12 +1,15 @@
 package decode
 
 import (
+	"encoding/hex"
+	"sync"
+
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/char"
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
 )
 
-type Iterator struct {
-	encoder    encode.Encoder
+type Decoder struct {
+	algorithm  encode.Alg
 	charList   []rune
 	charLen    int
 	maxPassLen int
@@ -18,62 +21,68 @@ const (
 
 var (
 	hash []byte
+	wg   sync.WaitGroup
 )
 
-func (i *Iterator) Run(decHash []byte) (pass string, err error) {
-	hash = decHash // set as global var
+func (i *Decoder) Decode(input string) (pass string, err error) {
+	hexHash, err := hex.DecodeString(input)
 
-	//chFound := make(chan bool)
-	//chRes := make(chan string)
+	if err != nil {
+		return "", err
+	}
 
-	for _, h := range i.createHolders() {
-		pass, err = i.iterateHolder(h)
+	hash = hexHash
+	holders := i.createHolders()
+	ch := make(chan string, len(holders))
 
-		if err == nil {
-			return pass, nil
-		}
+	for _, h := range holders {
+		go i.iterateHolder(h, ch)
+	}
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for res := range ch {
+		return res, nil
 	}
 
 	return "", ErrHashWasNotDecoded
 }
 
-func (i *Iterator) iterateHolder(holder *char.Holder) (pass string, err error) {
-	// @todo implement channel
-	// @todo get/add starting character postpone
+func (i *Decoder) iterateHolder(holder *char.Holder, ch chan string) {
+	defer wg.Done()
+	encoder, _ := encode.Factory(i.algorithm)
+
 	for hIdx := iterableRunesStarIndex; hIdx < holder.GetLen(); hIdx++ {
-		pass, err = i.iterateHolderRune(holder, hIdx)
-
-		if err == nil {
-			return pass, nil
+		if pass := i.iterateHolderRune(holder, encoder, hIdx); pass != "" {
+			ch <- pass
 		}
 	}
-
-	return "", ErrHashWasNotDecoded
 }
 
-func (i Iterator) iterateHolderRune(holder *char.Holder, hIdx int) (pass string, err error) {
+func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int) string {
 	isLastIteration := holder.GetLen() == hIdx+1
 
 	for charIdx := 0; charIdx < i.charLen; charIdx++ {
 		holder.Set(hIdx, i.getChar(charIdx))
 
-		if i.encoder.Match(holder.ToBytes(), hash) {
-			return holder.ToString(), nil
+		if encoder.Match(holder.ToBytes(), hash) {
+			return holder.ToString()
 		}
 
 		if isLastIteration == false {
-			pass, err = i.iterateHolderRune(holder, hIdx+1)
-
-			if err == nil {
-				return pass, nil
+			if pass := i.iterateHolderRune(holder, encoder, hIdx+1); pass != "" {
+				return pass
 			}
 		}
 	}
 
-	return "", ErrHashWasNotDecoded
+	return ""
 }
 
-func (i *Iterator) createHolders() []*char.Holder {
+func (i *Decoder) createHolders() []*char.Holder {
 	var holders []*char.Holder
 	initChar := i.charList[0]
 
@@ -86,25 +95,26 @@ func (i *Iterator) createHolders() []*char.Holder {
 			h.Set(0, i.getChar(charIdx))
 
 			holders = append(holders, h)
+			wg.Add(1)
 		}
 	}
 
 	return holders
 }
 
-func (i *Iterator) getChar(idx int) rune {
+func (i *Decoder) getChar(idx int) rune {
 	return i.charList[idx]
 }
 
-func NewIterator(encoder encode.Encoder) *Iterator {
+func NewDecoder(alg encode.Alg) *Decoder {
 	//chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 	//	"abcdefghijklmnopqrstuvwxyz" +
 	//	"0123456789")
 
 	chars := []rune("abcdefghijklmnopqrstuvwxyz")
 
-	return &Iterator{
-		encoder:    encoder,
+	return &Decoder{
+		algorithm:  alg,
 		charList:   chars,
 		charLen:    len(chars),
 		maxPassLen: 5,
