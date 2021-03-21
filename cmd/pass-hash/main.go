@@ -11,26 +11,23 @@ import (
 func main() {
 	args := os.Args[1:]
 
-	if len(args) < 2 {
-		log.Fatal(encode.ErrToFewArgumentsPassed)
+	if len(args) != 2 {
+		log.Fatal(encode.ErrWrongArgumentsCount)
 	}
 
-	alg := encode.Algorithm(args[0])
-	code := encode.PlainCode(args[1])
+	alg := encode.Alg(args[0])
 	encoder, err := encode.Factory(alg)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	hash, err := encoder.Encode(code)
+	hash, err := encoder.EncodeStr(args[1])
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	format := "For passcode '%s' and algorithm '%s' hash is:"
-
-	fmt.Println(fmt.Sprintf(format, code, alg))
-	fmt.Println(hash)
+	format := "Algorithm '%s', Pass '%s', Hash '%s'"
+	fmt.Println(fmt.Sprintf(format, alg, args[1], hash))
 }

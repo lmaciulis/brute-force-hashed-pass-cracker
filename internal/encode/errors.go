@@ -2,8 +2,8 @@ package encode
 
 import "errors"
 
-// Domain errors.
+// Encode domain errors
 var (
-	ErrToFewArgumentsPassed = errors.New("at least 2 argument should be passed: hash algorithm and at least one string to be hashed")
-	ErrAlgorithmNotFound    = errors.New("such hash algorithm is not configured")
+	ErrWrongArgumentsCount = errors.New("exactly 2 argument should be passed: hash algorithm and string to be hashed")
+	ErrAlgorithmNotFound   = errors.New("such hash algorithm is not configured")
 )

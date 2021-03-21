@@ -1,6 +1,7 @@
 package encode
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
 	"hash"
@@ -11,14 +12,25 @@ type EncoderSha1 struct {
 	Encoder hash.Hash
 }
 
-// Encode encodes string to sha1 hash string
-func (e *EncoderSha1) Encode(code PlainCode) (hash HashCode, error error) {
-	e.Encoder.Write([]byte(code))
+// EncodeStr encodes string to sha1 hash string
+func (e *EncoderSha1) EncodeStr(pass string) (hash string, error error) {
+	hexSum, _ := e.Encode([]byte(pass))
 
-	hexSum := e.Encoder.Sum(nil)
-	strSum := hex.EncodeToString(hexSum)
+	return hex.EncodeToString(hexSum), nil
+}
 
-	return HashCode(strSum), nil
+// Encode encodes bytes to sha1 hash hex bytes
+func (e *EncoderSha1) Encode(pass []byte) (hash []byte, err error) {
+	e.Encoder.Reset()
+	e.Encoder.Write(pass)
+
+	return e.Encoder.Sum(nil), nil
+}
+
+func (e *EncoderSha1) Match(pass []byte, hexHash []byte) bool {
+	hexSum, _ := e.Encode(pass)
+
+	return bytes.Equal(hexSum, hexHash)
 }
 
 // NewEncoderSha1 returns new EncoderSha1 instance

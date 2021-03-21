@@ -1,25 +1,25 @@
 package encode
 
 const (
-	algSha1 Algorithm = "sha1"
-	algMd5  Algorithm = "md5"
+	AlgSha1 Alg = "sha1"
+	AlgMd5  Alg = "md5"
 )
 
-type Algorithm string
-type HashCode string
-type PlainCode string
+type Alg string
 
 // Encoder interface for any type hash encoder
 type Encoder interface {
-	Encode(code PlainCode) (hash HashCode, err error)
+	EncodeStr(pass string) (hash string, err error)
+	Encode(pass []byte) (hash []byte, err error)
+	Match(pass []byte, hexHash []byte) bool
 }
 
 // Factory returns appropriate encoder by provided algorithm
-func Factory(alg Algorithm) (encoder Encoder, error error) {
+func Factory(alg Alg) (encoder Encoder, error error) {
 	switch alg {
-	case algSha1:
+	case AlgSha1:
 		return NewEncoderSha1(), nil
-	case algMd5:
+	case AlgMd5:
 		return NewEncoderMd5(), nil
 	default:
 		return nil, ErrAlgorithmNotFound
