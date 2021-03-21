@@ -6,11 +6,10 @@ import (
 )
 
 type Iterator struct {
-	encoder  encode.Encoder
-	charList []rune
-	charLen  int
-	minLen   int
-	maxLen   int
+	encoder    encode.Encoder
+	charList   []rune
+	charLen    int
+	maxPassLen int
 }
 
 var hash []byte
@@ -18,7 +17,7 @@ var hash []byte
 func (i *Iterator) Run(decHash []byte) (pass string, err error) {
 	hash = decHash
 
-	for hLen := i.minLen; hLen <= i.maxLen; hLen++ {
+	for hLen := 1; hLen <= i.maxPassLen; hLen++ {
 		holder := char.NewHolder(hLen, i.getFirstChar())
 		pass, err = i.iterateHolder(holder)
 
@@ -80,10 +79,9 @@ func NewIterator(encoder encode.Encoder) *Iterator {
 	chars := []rune("abcdefghijklmnopqrstuvwxyz")
 
 	return &Iterator{
-		encoder:  encoder,
-		charList: chars,
-		charLen:  len(chars),
-		minLen:   2,
-		maxLen:   5,
+		encoder:    encoder,
+		charList:   chars,
+		charLen:    len(chars),
+		maxPassLen: 5,
 	}
 }

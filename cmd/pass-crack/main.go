@@ -27,7 +27,7 @@ func main() {
 	pass, err := decoder.Decode(args[1])
 	elapsed := time.Since(start)
 
-	log.Printf("Timing: %fs", elapsed.Seconds())
+	fmt.Println(fmt.Sprintf("Timing: %fs", elapsed.Seconds()))
 
 	if err != nil {
 		log.Fatal(err)
