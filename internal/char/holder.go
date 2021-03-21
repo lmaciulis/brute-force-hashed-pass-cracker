@@ -3,28 +3,28 @@ package char
 import "unicode/utf8"
 
 type Holder struct {
-	chars []rune
-	count int
+	charList []rune
+	charLen  int
 }
 
 func (h *Holder) Set(idx int, char rune) {
-	h.chars[idx] = char
+	h.charList[idx] = char
 }
 
 func (h *Holder) ToString() string {
-	return string(h.chars)
+	return string(h.charList)
 }
 
 func (h *Holder) ToBytes() []byte {
 	size := 0
-	for _, r := range h.chars {
+	for _, r := range h.charList {
 		size += utf8.RuneLen(r)
 	}
 
 	bs := make([]byte, size)
 
 	count := 0
-	for _, r := range h.chars {
+	for _, r := range h.charList {
 		count += utf8.EncodeRune(bs[count:], r)
 	}
 
@@ -32,7 +32,7 @@ func (h *Holder) ToBytes() []byte {
 }
 
 func (h *Holder) GetLen() int {
-	return h.count
+	return h.charLen
 }
 
 func NewHolder(len int, char rune) *Holder {
@@ -43,7 +43,7 @@ func NewHolder(len int, char rune) *Holder {
 	}
 
 	return &Holder{
-		chars: chars,
-		count: len,
+		charList: chars,
+		charLen:  len,
 	}
 }

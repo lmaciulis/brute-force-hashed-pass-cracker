@@ -15,12 +15,12 @@ type Iterator struct {
 
 var hash []byte
 
-func (h *Iterator) Run(decHash []byte) (pass string, err error) {
+func (i *Iterator) Run(decHash []byte) (pass string, err error) {
 	hash = decHash
 
-	for l := h.minLen; l <= h.maxLen; l++ {
-		holder := char.NewHolder(l, h.charList[0])
-		pass, err = h.iterateHolder(holder)
+	for hLen := i.minLen; hLen <= i.maxLen; hLen++ {
+		holder := char.NewHolder(hLen, i.getFirstChar())
+		pass, err = i.iterateHolder(holder)
 
 		if err == nil {
 			return pass, nil
@@ -30,19 +30,30 @@ func (h *Iterator) Run(decHash []byte) (pass string, err error) {
 	return "", ErrHashWasNotDecoded
 }
 
-func (h Iterator) iterateHolderRune(holder *char.Holder, idx int) (pass string, err error) {
-	//charLen := len(h.charList)
+func (i *Iterator) iterateHolder(holder *char.Holder) (pass string, err error) {
+	for hIdx := 0; hIdx < holder.GetLen(); hIdx++ {
+		pass, err = i.iterateHoldersRune(holder, hIdx)
+
+		if err == nil {
+			return pass, nil
+		}
+	}
+
+	return "", ErrHashWasNotDecoded
+}
+
+func (i Iterator) iterateHoldersRune(holder *char.Holder, idx int) (pass string, err error) {
 	isLastIteration := holder.GetLen() == idx+1
 
-	for charIdx := 0; charIdx < h.charLen; charIdx++ {
-		holder.Set(idx, h.charList[charIdx])
+	for charIdx := 0; charIdx < i.charLen; charIdx++ {
+		holder.Set(idx, i.getChar(charIdx))
 
-		if h.encoder.Match(holder.ToBytes(), hash) {
+		if i.encoder.Match(holder.ToBytes(), hash) {
 			return holder.ToString(), nil
 		}
 
 		if isLastIteration == false {
-			pass, err = h.iterateHolderRune(holder, idx+1)
+			pass, err = i.iterateHoldersRune(holder, idx+1)
 
 			if err == nil {
 				return pass, nil
@@ -53,16 +64,12 @@ func (h Iterator) iterateHolderRune(holder *char.Holder, idx int) (pass string, 
 	return "", ErrHashWasNotDecoded
 }
 
-func (h *Iterator) iterateHolder(holder *char.Holder) (pass string, err error) {
-	for runeIdx := 0; runeIdx < holder.GetLen(); runeIdx++ {
-		pass, err = h.iterateHolderRune(holder, runeIdx)
+func (i *Iterator) getChar(idx int) rune {
+	return i.charList[idx]
+}
 
-		if err == nil {
-			return pass, nil
-		}
-	}
-
-	return "", ErrHashWasNotDecoded
+func (i *Iterator) getFirstChar() rune {
+	return i.charList[0]
 }
 
 func NewIterator(encoder encode.Encoder) *Iterator {
