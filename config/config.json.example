@@ -1,0 +1,18 @@
+{
+  "available_chars": "abcdefghijklmnopqrstuvwxyz",
+  "max_pass_length": 7,
+  "prefixes": {
+    "enabled": true,
+    "list": [
+      "1", "2", "3",
+      "A", "B", "C", "Č", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+      "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ž"
+    ]
+  },
+  "suffixes": {
+    "enabled": true,
+    "list": [
+      "1", "2", "3", "12", "21", "123", "321"
+    ]
+  }
+}

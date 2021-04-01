@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/char"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/config"
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
 )
 
@@ -13,6 +14,10 @@ type Decoder struct {
 	charList   []rune
 	charLen    int
 	maxPassLen int
+	prefixes   [][]rune
+	suffixes   [][]rune
+	preEnabled bool
+	sufEnabled bool
 }
 
 const (
@@ -33,7 +38,7 @@ func (i *Decoder) Decode(input string) (pass string, err error) {
 
 	hash = hexHash
 	holders := i.createHolders()
-	ch := make(chan string, len(holders))
+	ch := make(chan string, len(holders)) // @todo remove buffer when routines wil be added dynamiclly
 
 	for _, h := range holders {
 		go i.iterateHolder(h, ch)
@@ -67,6 +72,7 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 
 	for charIdx := 0; charIdx < i.charLen; charIdx++ {
 		holder.Set(hIdx, i.getChar(charIdx))
+		// @todo create separate holder routines for prefixes and suffixes
 
 		if encoder.Match(holder.ToBytes(), hash) {
 			return holder.ToString()
@@ -106,17 +112,27 @@ func (i *Decoder) getChar(idx int) rune {
 	return i.charList[idx]
 }
 
-func NewDecoder(alg encode.Alg) *Decoder {
-	//chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-	//	"abcdefghijklmnopqrstuvwxyz" +
-	//	"0123456789")
+func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
+	chars := []rune(cfg.AvailableChars)
 
-	chars := []rune("abcdefghijklmnopqrstuvwxyz")
+	var prefixes [][]rune
+	var suffixes [][]rune
+
+	for _, c := range cfg.Prefixes.List {
+		prefixes = append(prefixes, []rune(c))
+	}
+	for _, c := range cfg.Suffixes.List {
+		suffixes = append(suffixes, []rune(c))
+	}
 
 	return &Decoder{
 		algorithm:  alg,
 		charList:   chars,
 		charLen:    len(chars),
-		maxPassLen: 5,
+		maxPassLen: cfg.MaxPassLength,
+		prefixes:   prefixes,
+		suffixes:   suffixes,
+		preEnabled: cfg.Prefixes.Enabled,
+		sufEnabled: cfg.Suffixes.Enabled,
 	}
 }

@@ -1,14 +1,37 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
 
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/config"
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/decode"
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
 )
+
+var cfg config.Config
+
+func init() {
+	file, err := os.Open("config/config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.Unmarshal(bytes, &cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func main() {
 	args := os.Args[1:]
@@ -18,9 +41,9 @@ func main() {
 	}
 
 	alg := encode.Alg(args[0])
-	decoder := decode.NewDecoder(alg)
+	decoder := decode.NewDecoder(alg, &cfg)
 
-	// add for timing https://tour.golang.org/concurrency/6
+	// @todo add for timing https://tour.golang.org/concurrency/6
 	start := time.Now()
 	pass, err := decoder.Decode(args[1])
 	elapsed := time.Since(start)

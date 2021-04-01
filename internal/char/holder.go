@@ -35,6 +35,10 @@ func (h *Holder) GetLen() int {
 	return h.charLen
 }
 
+func CloneHolder(h *Holder, prefix []rune, suffix []rune) {
+	// @todo create new holder
+}
+
 func NewHolder(len int, char rune) *Holder {
 	chars := make([]rune, len)
 
