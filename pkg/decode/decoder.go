@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"sync"
 
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/char"
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/config"
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/char"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/config"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/encode"
 )
 
 type Decoder struct {
@@ -73,6 +73,7 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 
 		if encoder.Match(holder.ToBytes(), hash) {
 			ch <- holder.ToString()
+			return
 		}
 
 		if i.preEnabled || i.sufEnabled {

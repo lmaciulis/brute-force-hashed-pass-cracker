@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/encode"
 )
 
 func main() {

@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/config"
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/decode"
-	"github.com/lmaciulis/brute-force-hashed-pass-cracker/internal/encode"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/config"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/decode"
+	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/encode"
 )
 
 var cfg config.Config
