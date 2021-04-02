@@ -38,7 +38,7 @@ func (i *Decoder) Decode(input string) (pass string, err error) {
 
 	hash = hexHash
 	holders := i.createHolders()
-	ch := make(chan string, len(holders)) // @todo remove buffer when routines wil be added dynamiclly
+	ch := make(chan string, 1)
 
 	for _, h := range holders {
 		go i.iterateHolder(h, ch)
@@ -61,31 +61,68 @@ func (i *Decoder) iterateHolder(holder *char.Holder, ch chan string) {
 	encoder, _ := encode.Factory(i.algorithm)
 
 	for hIdx := iterableRunesStarIndex; hIdx < holder.GetLen(); hIdx++ {
-		if pass := i.iterateHolderRune(holder, encoder, hIdx); pass != "" {
-			ch <- pass
-		}
+		i.iterateHolderRune(holder, encoder, hIdx, ch)
 	}
 }
 
-func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int) string {
+func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int, ch chan string) {
 	isLastIteration := holder.GetLen() == hIdx+1
 
 	for charIdx := 0; charIdx < i.charLen; charIdx++ {
 		holder.Set(hIdx, i.getChar(charIdx))
-		// @todo create separate holder routines for prefixes and suffixes
 
 		if encoder.Match(holder.ToBytes(), hash) {
-			return holder.ToString()
+			ch <- holder.ToString()
+		}
+
+		if i.preEnabled || i.sufEnabled {
+			wg.Add(1)
+			go i.iteratePrefixesSuffixes(char.CloneHolder(holder), ch)
 		}
 
 		if isLastIteration == false {
-			if pass := i.iterateHolderRune(holder, encoder, hIdx+1); pass != "" {
-				return pass
+			i.iterateHolderRune(holder, encoder, hIdx+1, ch)
+		}
+	}
+}
+
+func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string) {
+	defer wg.Done()
+
+	encoder, _ := encode.Factory(i.algorithm)
+
+	if i.preEnabled {
+		// loop through prepended prefixes and check if hash match
+		for _, prefix := range i.prefixes {
+			hp := char.CloneHolderWithPrefix(holder, prefix)
+			if encoder.Match(hp.ToBytes(), hash) {
+				ch <- hp.ToString()
+				return
+			}
+
+			if i.sufEnabled {
+				// also append suffix for each prefixed handler and check if hash match
+				for _, suffix := range i.suffixes {
+					hs := char.CloneHolderWithSuffix(hp, suffix)
+					if encoder.Match(hs.ToBytes(), hash) {
+						ch <- hs.ToString()
+						return
+					}
+				}
 			}
 		}
 	}
 
-	return ""
+	if i.sufEnabled {
+		// finally, loop through original passed handler with only available suffixes appended, and check if hash match
+		for _, suffix := range i.suffixes {
+			hs := char.CloneHolderWithSuffix(holder, suffix)
+			if encoder.Match(hs.ToBytes(), hash) {
+				ch <- hs.ToString()
+				return
+			}
+		}
+	}
 }
 
 func (i *Decoder) createHolders() []*char.Holder {

@@ -1,6 +1,6 @@
 {
   "available_chars": "abcdefghijklmnopqrstuvwxyz",
-  "max_pass_length": 7,
+  "max_pass_length": 6,
   "prefixes": {
     "enabled": true,
     "list": [
