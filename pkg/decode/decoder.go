@@ -2,7 +2,10 @@ package decode
 
 import (
 	"encoding/hex"
+	"fmt"
+	"math"
 	"sync"
+	"time"
 
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/char"
 	"github.com/lmaciulis/brute-force-hashed-pass-cracker/pkg/config"
@@ -10,62 +13,89 @@ import (
 )
 
 type Decoder struct {
-	algorithm  encode.Alg
-	charList   []rune
-	charLen    int
-	maxPassLen int
-	prefixes   [][]rune
-	suffixes   [][]rune
-	preEnabled bool
-	sufEnabled bool
+	algorithm      encode.Alg
+	charList       []rune
+	charLen        int
+	maxPassLen     int
+	prefixes       [][]rune
+	suffixes       [][]rune
+	preEnabled     bool
+	sufEnabled     bool
+	preSufOverhead int
 }
 
 const (
 	iterableRunesStarIndex = 1
+	countOutputInterval    = 10
 )
 
 var (
-	hash []byte
-	wg   sync.WaitGroup
+	hash  []byte
+	wg    sync.WaitGroup
+	count int
 )
 
-func (i *Decoder) Decode(input string) (pass string, err error) {
+func (i *Decoder) Decode(input string) (pass string, scanned int, err error) {
 	hexHash, err := hex.DecodeString(input)
 
 	if err != nil {
-		return "", err
+		return "", count, err
 	}
 
 	hash = hexHash
 	holders := i.createHolders()
 	ch := make(chan string, 1)
+	chCnt := make(chan int)
 
 	for _, h := range holders {
-		go i.iterateHolder(h, ch)
+		go i.iterateHolder(h, ch, chCnt)
 	}
 
+	// closes all goroutines if program ended without success match
 	go func() {
 		wg.Wait()
+
 		close(ch)
+		close(chCnt)
 	}()
 
+	// outputs scanned phrases one every time interval
+	go func() {
+		ticker := time.NewTicker(countOutputInterval * time.Second)
+
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println(fmt.Sprintf("... phrases scanned: %d", count))
+			}
+		}
+	}()
+
+	// increments scanned phrases count
+	go func() {
+		for cnt := range chCnt {
+			count += cnt
+		}
+	}()
+
+	// returns phrase when success match found and sent to channel
 	for res := range ch {
-		return res, nil
+		return res, count, nil
 	}
 
-	return "", ErrHashWasNotDecoded
+	return "", count, ErrHashWasNotDecoded
 }
 
-func (i *Decoder) iterateHolder(holder *char.Holder, ch chan string) {
+func (i *Decoder) iterateHolder(holder *char.Holder, ch chan string, chCnt chan int) {
 	defer wg.Done()
 	encoder, _ := encode.Factory(i.algorithm)
 
 	for hIdx := iterableRunesStarIndex; hIdx < holder.GetLen(); hIdx++ {
-		i.iterateHolderRune(holder, encoder, hIdx, ch)
+		i.iterateHolderRune(holder, encoder, hIdx, ch, chCnt)
 	}
 }
 
-func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int, ch chan string) {
+func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int, ch chan string, chCnt chan int) {
 	isLastIteration := holder.GetLen() == hIdx+1
 
 	for charIdx := 0; charIdx < i.charLen; charIdx++ {
@@ -76,18 +106,20 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 			return
 		}
 
+		chCnt <- 1
+
 		if i.preEnabled || i.sufEnabled {
 			wg.Add(1)
-			go i.iteratePrefixesSuffixes(char.CloneHolder(holder), ch)
+			go i.iteratePrefixesSuffixes(char.CloneHolder(holder), ch, chCnt)
 		}
 
 		if isLastIteration == false {
-			i.iterateHolderRune(holder, encoder, hIdx+1, ch)
+			i.iterateHolderRune(holder, encoder, hIdx+1, ch, chCnt)
 		}
 	}
 }
 
-func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string) {
+func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string, chCnt chan int) {
 	defer wg.Done()
 
 	encoder, _ := encode.Factory(i.algorithm)
@@ -124,6 +156,8 @@ func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string) {
 			}
 		}
 	}
+
+	chCnt <- i.preSufOverhead
 }
 
 func (i *Decoder) createHolders() []*char.Holder {
@@ -155,6 +189,7 @@ func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
 
 	var prefixes [][]rune
 	var suffixes [][]rune
+	preSufOverhead := 0
 
 	for _, c := range cfg.Prefixes.List {
 		prefixes = append(prefixes, []rune(c))
@@ -163,14 +198,50 @@ func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
 		suffixes = append(suffixes, []rune(c))
 	}
 
-	return &Decoder{
-		algorithm:  alg,
-		charList:   chars,
-		charLen:    len(chars),
-		maxPassLen: cfg.MaxPassLength,
-		prefixes:   prefixes,
-		suffixes:   suffixes,
-		preEnabled: cfg.Prefixes.Enabled,
-		sufEnabled: cfg.Suffixes.Enabled,
+	if cfg.Prefixes.Enabled {
+		preSufOverhead += len(prefixes)
 	}
+	if cfg.Suffixes.Enabled {
+		preSufOverhead += len(suffixes)
+	}
+	if cfg.Prefixes.Enabled && cfg.Suffixes.Enabled {
+		preSufOverhead += len(prefixes) + len(suffixes)
+	}
+
+	return &Decoder{
+		algorithm:      alg,
+		charList:       chars,
+		charLen:        len(chars),
+		maxPassLen:     cfg.MaxPassLength,
+		prefixes:       prefixes,
+		suffixes:       suffixes,
+		preEnabled:     cfg.Prefixes.Enabled,
+		sufEnabled:     cfg.Suffixes.Enabled,
+		preSufOverhead: preSufOverhead,
+	}
+}
+
+func (i *Decoder) GetMaxIterations() int {
+	base := math.Pow(float64(i.charLen), float64(i.maxPassLen))
+	overhead := 1
+
+	if i.preSufOverhead > 0 {
+		overhead = i.preSufOverhead
+	}
+
+	return int(base * float64(overhead))
+}
+
+func (i *Decoder) GetMaxIterationsCalcRepresent() string {
+	overhead := 1
+	if i.preSufOverhead > 0 {
+		overhead = i.preSufOverhead
+	}
+
+	return fmt.Sprintf(
+		"%d (available chars)^%d (max phrase length) * %d (suffix/prefix overhead) = %d (max iterations)",
+		i.charLen,
+		i.maxPassLen,
+		overhead,
+		i.GetMaxIterations())
 }
