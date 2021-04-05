@@ -64,19 +64,27 @@ func printIntro(decoder *decode.Decoder, alg encode.Alg, hash string) {
 You are trying to decode hash '%s' with '%s' algorithm.
 Please be aware, that every additional character added in config exponentially increases program execution time.
 As an example:
-Standard PC, with 4 CPU cores ~2.5 Ghz, scans around 1 million phrases per seconds for SHA1 algorithm (MD5 works much faster).
+Standard PC, with 4 CPU cores ~2.5 Ghz, scans around 2 millions phrases per seconds for SHA1 algorithm (MD5 works much faster).
 So, for SHA1 algorithm, based on your current configuration there are:
 %s
-As a result max execution time can lead up to: %f hours.
+As a result, max execution time can lead up to: %s.
 You can always terminate program by pressing 'ctrl/cmd + c'
 
 Starting program....
 `
+	t := float64(decoder.GetMaxIterations()) / 2000000 / 60
+	maxTime := ""
+
+	if t > 60 {
+		maxTime = fmt.Sprintf("%f hours", t/60)
+	} else {
+		maxTime = fmt.Sprintf("%f minutes", t)
+	}
 
 	fmt.Println(fmt.Sprintf(
 		format,
 		hash,
 		alg,
 		decoder.GetMaxIterationsCalcRepresent(),
-		float64(decoder.GetMaxIterations())/1000000/60/60))
+		maxTime))
 }
