@@ -49,7 +49,7 @@ func CloneHolderWithSuffix(h *Holder, suffix []rune) *Holder {
 		idx++
 	}
 
-	return newHolderWithFromCharList(chars)
+	return newHolderFromCharList(chars)
 }
 
 func CloneHolderWithPrefix(h *Holder, prefix []rune) *Holder {
@@ -66,7 +66,7 @@ func CloneHolderWithPrefix(h *Holder, prefix []rune) *Holder {
 		idx++
 	}
 
-	return newHolderWithFromCharList(chars)
+	return newHolderFromCharList(chars)
 }
 
 func CloneHolder(h *Holder) *Holder {
@@ -76,7 +76,7 @@ func CloneHolder(h *Holder) *Holder {
 		chars[i] = c
 	}
 
-	return newHolderWithFromCharList(chars)
+	return newHolderFromCharList(chars)
 }
 
 func NewHolder(len int, char rune) *Holder {
@@ -92,7 +92,7 @@ func NewHolder(len int, char rune) *Holder {
 	}
 }
 
-func newHolderWithFromCharList(chars []rune) *Holder {
+func newHolderFromCharList(chars []rune) *Holder {
 	return &Holder{
 		charList: chars,
 		charLen:  len(chars),

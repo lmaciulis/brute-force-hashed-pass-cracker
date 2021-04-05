@@ -205,7 +205,7 @@ func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
 		preSufOverhead += len(suffixes)
 	}
 	if cfg.Prefixes.Enabled && cfg.Suffixes.Enabled {
-		preSufOverhead += len(prefixes) + len(suffixes)
+		preSufOverhead += len(prefixes) * len(suffixes)
 	}
 
 	return &Decoder{
