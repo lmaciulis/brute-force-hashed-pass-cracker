@@ -27,6 +27,7 @@ func (e *EncoderMd5) Encode(pass []byte) (hash []byte, err error) {
 	return e.Encoder.Sum(nil), nil
 }
 
+// Match checks if given phrase (in bytes) matches hexadecimal hash (in bytes)
 func (e *EncoderMd5) Match(pass []byte, hexHash []byte) bool {
 	hexSum, _ := e.Encode(pass)
 

@@ -35,6 +35,8 @@ var (
 	count int
 )
 
+// Decode main decoder method, iterates over all possible chars variations and checks with provided hash.
+// Returns matched phrase or error if match not found, and all possible chars variations checked without success
 func (i *Decoder) Decode(input string) (pass string, scanned int, err error) {
 	hexHash, err := hex.DecodeString(input)
 
@@ -184,6 +186,7 @@ func (i *Decoder) getChar(idx int) rune {
 	return i.charList[idx]
 }
 
+// NewDecoder creates new decoder by provided algorithm and decoder config
 func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
 	chars := []rune(cfg.AvailableChars)
 
@@ -221,6 +224,7 @@ func NewDecoder(alg encode.Alg, cfg *config.Config) *Decoder {
 	}
 }
 
+// GetMaxIterations returns max available decoder iterations, calculated by provided config
 func (i *Decoder) GetMaxIterations() int {
 	base := math.Pow(float64(i.charLen), float64(i.maxPassLen))
 	overhead := 1
@@ -232,6 +236,8 @@ func (i *Decoder) GetMaxIterations() int {
 	return int(base * float64(overhead))
 }
 
+// GetMaxIterationsCalcRepresent returns max available decoder iterations, calculated by provided config,
+// full explained mathematical string representation
 func (i *Decoder) GetMaxIterationsCalcRepresent() string {
 	overhead := 1
 	if i.preSufOverhead > 0 {
