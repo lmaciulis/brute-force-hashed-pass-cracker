@@ -69,10 +69,10 @@ RAM consumption may reach up to 4-5 GB. Mostly not.
 
 Every time you run the program, max execution time calculation is printed.
 Every additional character added to config exponentially increases program execution time.
-As an example, with default configuration, calculations may look like that:
+As an example, with default configuration, calculations may look like this:
 > 26 (available chars)^6 (max phrase length) * 239 (suffix/prefix overhead) = 73830870464 (max iterations)
 
-So for `sha1` algorithm, for average 4 cores PC, which scans about 2 mills phrases a second,
+So for `sha1` algorithm, for average 4 cores PC, which scans about 2 mills phrases per second,
 it can take up to 10 hours to complete scan 
 for all possible phrases with prefixes and suffixes.
 
