@@ -64,8 +64,7 @@ But when prefixes and suffixes enabled, from a program's perspective:
 In short, program takes all your CPU while running. This is expected, 
 while standard PC, with 4 CPU cores ~2.5 Ghz, scans around 2 millions phrases per second.
 The faster you scan, the faster you'll get the answer.
-RAM is not so crucial, but with higher load of prefixes/suffixes,
-RAM consumption may reach up to 4-5 GB. Mostly not.
+RAM is not so crucial.
 
 Every time you run the program, max execution time calculation is printed.
 Every additional character added to config exponentially increases program execution time.

@@ -105,14 +105,13 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 
 		if encoder.Match(holder.ToBytes(), hash) {
 			ch <- holder.ToString()
-			return
 		}
 
 		chCnt <- 1
 
 		if i.preEnabled || i.sufEnabled {
 			wg.Add(1)
-			go i.iteratePrefixesSuffixes(char.CloneHolder(holder), ch, chCnt)
+			i.iteratePrefixesSuffixes(char.CloneHolder(holder), encoder, ch, chCnt)
 		}
 
 		if isLastIteration == false {
@@ -121,10 +120,8 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 	}
 }
 
-func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string, chCnt chan int) {
+func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, encoder encode.Encoder, ch chan string, chCnt chan int) {
 	defer wg.Done()
-
-	encoder, _ := encode.Factory(i.algorithm)
 
 	if i.preEnabled {
 		// loop through prepended prefixes and check if hash match
@@ -132,7 +129,6 @@ func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string, c
 			hp := char.CloneHolderWithPrefix(holder, prefix)
 			if encoder.Match(hp.ToBytes(), hash) {
 				ch <- hp.ToString()
-				return
 			}
 
 			if i.sufEnabled {
@@ -141,7 +137,6 @@ func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string, c
 					hs := char.CloneHolderWithSuffix(hp, suffix)
 					if encoder.Match(hs.ToBytes(), hash) {
 						ch <- hs.ToString()
-						return
 					}
 				}
 			}
@@ -154,7 +149,6 @@ func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, ch chan string, c
 			hs := char.CloneHolderWithSuffix(holder, suffix)
 			if encoder.Match(hs.ToBytes(), hash) {
 				ch <- hs.ToString()
-				return
 			}
 		}
 	}
