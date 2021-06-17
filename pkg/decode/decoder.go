@@ -110,7 +110,6 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 		chCnt <- 1
 
 		if i.preEnabled || i.sufEnabled {
-			wg.Add(1)
 			i.iteratePrefixesSuffixes(char.CloneHolder(holder), encoder, ch, chCnt)
 		}
 
@@ -121,8 +120,6 @@ func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, 
 }
 
 func (i *Decoder) iteratePrefixesSuffixes(holder *char.Holder, encoder encode.Encoder, ch chan string, chCnt chan int) {
-	defer wg.Done()
-
 	if i.preEnabled {
 		// loop through prepended prefixes and check if hash match
 		for _, prefix := range i.prefixes {
