@@ -97,7 +97,7 @@ func (i *Decoder) iterateHolder(holder *char.Holder, ch chan string, chCnt chan 
 	}
 }
 
-func (i Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int, ch chan string, chCnt chan int) {
+func (i *Decoder) iterateHolderRune(holder *char.Holder, encoder encode.Encoder, hIdx int, ch chan string, chCnt chan int) {
 	isLastIteration := holder.GetLen() == hIdx+1
 
 	for charIdx := 0; charIdx < i.charLen; charIdx++ {
